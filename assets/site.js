@@ -6,7 +6,7 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const url = p => BASE + p;
 
-  let SITE, ISSUES, LATEST, ALL_ARTICLES = [];
+  let SITE, ISSUES, LATEST, ALL_ARTICLES = [], ADVERTISERS = [];
   const secBy = slug => SITE.sections.find(x => x.slug === slug) || { slug, name: slug, ico: '', desc: '' };
   const issueBy = id => ISSUES.find(i => i.id === id);
   const pdfPage = (issue, page) => url(issue.pdf) + (page ? '#page=' + page : '');
@@ -14,12 +14,18 @@
   async function getJSON(p) { const r = await fetch(url(p), { cache: 'no-cache' }); if (!r.ok) throw new Error(p); return r.json(); }
 
   async function load() {
-    SITE = await getJSON('data/site.json');
+    SITE = null; if (PREVIEW) { try { SITE = await getJSON('data/site-preview.json'); } catch (e) {} }
+    if (!SITE) SITE = await getJSON('data/site.json');
     let data;
     if (PREVIEW) { try { data = await getJSON('data/issues-preview.json'); } catch (e) { data = null; } }
     if (!data) data = await getJSON('data/issues.json');
     ISSUES = data.issues.slice().sort((a, b) => b.id.localeCompare(a.id));
     LATEST = ISSUES[0];
+    let adv = null;
+    if (PREVIEW) { try { adv = await getJSON('data/advertisers-preview.json'); } catch (e) {} }
+    if (!adv) { try { adv = await getJSON('data/advertisers.json'); } catch (e) { adv = { advertisers: [] }; } }
+    const mIdx = id => { const [y, m] = id.split('-').map(Number); return y * 12 + m; };
+    ADVERTISERS = (adv.advertisers || []).filter(a => mIdx(LATEST.id) - mIdx(a.lastSeen) < 12);
     ALL_ARTICLES = ISSUES.flatMap(iss => iss.articles.map(a => ({ ...a, issue: iss })));
     buildChrome();
     render();
@@ -63,7 +69,8 @@
           ${iss.photoCredit ? `<span class="tag">${esc(iss.photoCredit)}</span>` : ''}</div>
         <div class="hero-side">
           <p class="lede">${esc(iss.lede || '')}</p>
-          <div class="hero-list"><div class="hero-list-label">In this issue</div><ol class="hl-list">${latest.slice(0, 5).map((a, n) => `<li><a href="#article-${iss.id}-${a.id}"><span class="hl-n">${String(n + 1).padStart(2, '0')}</span><span class="hl-t"><small>${esc(secBy(a.section).name)}</small>${esc(a.title.split(':')[0].split(' – ')[0])}</span><span class="hl-p">p${a.page}</span></a></li>`).join('')}</ol></div>
+          ${(() => { const ed = iss.articles.find(a => a.section === 'editorial'); return ed ? `<a class="hero-ed" href="#article-${iss.id}-${ed.id}"><span class="hero-ed-label">Editorial</span><span class="hero-ed-title">${esc(ed.title.replace(/^Editorial:\s*/, ''))}</span><span class="hero-ed-more">Read the editorial →</span></a>` : ''; })()}
+          <div class="hero-list"><div class="hero-list-label">In this issue</div><ol class="hl-list">${latest.filter(a => a.section !== 'editorial').slice(0, 4).map((a, n) => `<li><a href="#article-${iss.id}-${a.id}"><span class="hl-n">${String(n + 1).padStart(2, '0')}</span><span class="hl-t"><small>${esc(secBy(a.section).name)}</small>${esc(a.title.split(':')[0].split(' – ')[0])}</span><span class="hl-p">p${a.page}</span></a></li>`).join('')}</ol></div>
           <div class="actions"><a class="btn" href="${pdfPage(iss)}" target="_blank" rel="noopener">Read the issue</a><a class="btn ghost" href="#latest-issue">What's inside</a></div>
         </div></div></div>
       <section class="block"><div class="wrap">
@@ -96,7 +103,7 @@
         <div class="issues" style="margin-top:28px">${ISSUES.map((iss, i) => `<a class="issue" href="#issue-${iss.id}"><div class="cov">${coverImg(iss)}</div><b>${esc(iss.title)}</b><span>Issue ${iss.number}${i === 0 ? ' · Latest' : ''}</span></a>`).join('')}</div></div>`;
     },
     advertisers() {
-      const iss = LATEST; const list = iss.advertisers || []; const pages = iss.adverts || [];
+      const iss = LATEST; const list = ADVERTISERS; const pages = iss.adverts || [];
       const cats = [...new Set(list.map(a => a.category))].sort();
       const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
       const have = new Set(list.map(a => a.letter));
@@ -116,7 +123,7 @@
             <div class="adv-body">
               <span class="adv-cat">${esc(a.category)}${a.area ? ' · ' + esc(a.area) : ''}</span>
               <h3>${esc(a.name)}</h3>
-              <p>${esc(a.blurb)}</p>
+              <p>${esc(a.blurb)}</p>${a.lastSeen !== iss.id ? `<span class="adv-last">Last advertised: ${esc((ISSUES.find(x => x.id === a.lastSeen) || {}).title || a.lastSeen)}</span>` : ''}
               <div class="adv-links">${tel(a.phone)}${a.web ? `<a href="${esc(webUrl(a.web))}" target="_blank" rel="noopener">Website</a>` : ''}${a.email ? `<a href="mailto:${esc(a.email)}">Email</a>` : ''}${a.article ? `<a href="#article-${iss.id}-${a.article}">Read their story</a>` : ''}</div>
             </div>
           </article>`).join('')}</div></section>`).join('')}</div>
@@ -264,7 +271,7 @@
     INDEX = [
       ...ALL_ARTICLES.map(a => ({ type: 'Article', cat: secBy(a.section).name, sec: a.section, title: a.title, text: a.summary + ' ' + a.body.join(' ') + ' ' + a.author, href: `#article-${a.issue.id}-${a.id}`, sum: a.summary, issue: a.issue })),
       ...(LATEST.diary || []).map(r => ({ type: 'Event', cat: 'What’s On', sec: 'whats-on', title: r.event, text: Object.values(r).join(' '), href: '#whats-on', sum: `${r.when} ${LATEST.month} · ${r.where} · ${r.time}` })),
-      ...(LATEST.advertisers || []).map(a => ({ type: 'Advert', cat: 'Advertisers', sec: 'advertisers', title: a.name, text: [a.name, a.category, a.blurb, a.area, a.phone, a.ocr || ''].join(' '), href: '#advertiser-' + a.id, sum: `${a.category}${a.phone ? ' · ' + a.phone : ''} – ${a.blurb}` })),
+      ...ADVERTISERS.map(a => ({ type: 'Advert', cat: 'Advertisers', sec: 'advertisers', title: a.name, text: [a.name, a.category, a.blurb, a.area, a.phone, a.ocr || ''].join(' '), href: '#advertiser-' + a.id, sum: `${a.category}${a.phone ? ' · ' + a.phone : ''} – ${a.blurb}` })),
       ...SITE.weekly.map(r => ({ type: 'Weekly', cat: 'Every week', sec: 'whats-on', title: r.event, text: Object.values(r).join(' '), href: '#whats-on', sum: `${r.day} · ${r.where} · ${r.time}` }))
     ];
   }
