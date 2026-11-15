@@ -27,7 +27,7 @@
   }
 
   /* ---------- shared bits ---------- */
-  const card = a => `<a class="card" href="#article-${a.issue.id}-${a.id}"><span class="cat">${esc(secBy(a.section).name)}</span><h3>${esc(a.title)}</h3><p>${esc(a.summary)}</p><span class="foot">${esc(a.issue.title)} · page ${a.page}</span></a>`;
+  const card = a => `<a class="card${a.images && a.images.length ? ' has-img' : ''}" href="#article-${a.issue.id}-${a.id}">${a.images && a.images.length ? `<span class="card-img"><img src="${url(a.images[0].src)}" alt="" loading="lazy"></span>` : ''}<span class="cat">${esc(secBy(a.section).name)}</span><h3>${esc(a.title)}</h3><p>${esc(a.summary)}</p><span class="foot">${esc(a.issue.title)} · page ${a.page}</span></a>`;
   const diaryTable = (rows, keys) => `<table class="diary"><thead><tr><th>When</th><th>Event</th><th>Where</th><th>Time</th></tr></thead><tbody>${rows.map(r => `<tr>${keys.map(k => `<td>${esc(r[k])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
   const coverImg = (iss, cls) => `<img src="${url(iss.cover)}" alt="${esc(iss.title)} cover" ${cls ? `class="${cls}"` : ''} onerror="this.outerHTML='<div class=&quot;cov-missing&quot;>${esc(iss.title)}<br>Issue ${iss.number}</div>'">`;
 
@@ -36,7 +36,7 @@
     const dd = $('#dd');
     $('#ddBtn').addEventListener('click', e => { e.stopPropagation(); dd.classList.toggle('open'); $('#ddBtn').setAttribute('aria-expanded', dd.classList.contains('open')); });
     document.addEventListener('click', e => { if (!dd.contains(e.target)) dd.classList.remove('open'); });
-    $('#burger').addEventListener('click', () => $('#nav').classList.toggle('open'));
+    $('#burger').addEventListener('click', () => { const o = $('#nav').classList.toggle('open'); $('#burger').classList.toggle('open', o); $('#burger').setAttribute('aria-expanded', o); });
     $('#footer').innerHTML = `<div class="wrap"><div class="cols">
       <div><div style="font-family:var(--serif);font-size:30px;color:#fff;line-height:1">${esc(SITE.name)}</div><p>${esc(SITE.about)}</p></div>
       <div><h4>Get in touch</h4>Contributions (by the ${esc(SITE.deadlineDay)}):<br><a href="mailto:${esc(SITE.contributionsEmail)}">${esc(SITE.contributionsEmail)}</a><br>Advertising &amp; enquiries:<br><a href="mailto:${esc(SITE.enquiriesEmail)}">${esc(SITE.enquiriesEmail)}</a></div>
@@ -57,22 +57,22 @@
       const iss = LATEST;
       const feat = (iss.featured || []).map(id => iss.articles.find(a => a.id === id)).filter(Boolean).map(a => ({ ...a, issue: iss }));
       const latest = feat.length ? feat : iss.articles.slice(0, 6).map(a => ({ ...a, issue: iss }));
-      return `<div class="wrap"><div class="hero">
-        <div class="hero-img"><img src="${url(iss.photo || iss.cover)}" alt="${esc(iss.title)} cover photo" onerror="this.parentNode.classList.add('no-photo');this.remove()">${iss.photoCredit ? `<span class="tag">${esc(iss.photoCredit)}</span>` : ''}</div>
-        <div>
-          <div class="eyebrow">Issue ${iss.number} · ${esc(iss.title)}</div>
-          <h1>${esc(iss.headline || 'The ' + iss.month + ' issue is here')}</h1>
+      return `<div class="wrap"><div class="hero hero2">
+        <div class="hero-img"><img src="${url(iss.photo || iss.cover)}" alt="${esc(iss.title)} cover photo" onerror="this.parentNode.classList.add('no-photo');this.remove()">
+          <div class="hero-over"><div class="eyebrow-light">Issue ${iss.number} · ${esc(iss.title)}</div><h1>${esc(iss.headline || 'The ' + iss.month + ' issue is here')}</h1></div>
+          ${iss.photoCredit ? `<span class="tag">${esc(iss.photoCredit)}</span>` : ''}</div>
+        <div class="hero-side">
           <p class="lede">${esc(iss.lede || '')}</p>
-          <ul class="featured">${latest.slice(0, 5).map(a => `<li><a href="#article-${iss.id}-${a.id}">${esc(a.title.split(':')[0])} <em>p${a.page}</em></a></li>`).join('')}</ul>
+          <div class="hero-list"><div class="hero-list-label">In this issue</div><ol class="hl-list">${latest.slice(0, 5).map((a, n) => `<li><a href="#article-${iss.id}-${a.id}"><span class="hl-n">${String(n + 1).padStart(2, '0')}</span><span class="hl-t"><small>${esc(secBy(a.section).name)}</small>${esc(a.title.split(':')[0].split(' – ')[0])}</span><span class="hl-p">p${a.page}</span></a></li>`).join('')}</ol></div>
           <div class="actions"><a class="btn" href="${pdfPage(iss)}" target="_blank" rel="noopener">Read the issue</a><a class="btn ghost" href="#latest-issue">What's inside</a></div>
         </div></div></div>
-      <section class="block" style="background:var(--white)"><div class="wrap">
-        <div class="section-head"><div><div class="eyebrow">Browse</div><h2>Explore by section</h2></div></div>
-        <div class="sec-tiles">${SITE.sections.map(s => `<a class="sec-tile" href="#section-${s.slug}"><span class="ico">${s.ico}</span><b>${esc(s.name)}</b><span>${esc(s.desc)}</span></a>`).join('')}</div>
-      </div></section>
       <section class="block"><div class="wrap">
         <div class="section-head"><div><div class="eyebrow">In this issue</div><h2>Latest articles</h2></div><a href="#latest-issue">See all ${iss.articles.length} articles →</a></div>
         <div class="grid">${latest.map(card).join('')}</div>
+        <div class="sec-strip">
+          <span class="sec-strip-label">Browse by section</span>
+          <div class="sec-chips">${SITE.sections.map(s => `<a class="sec-chip" href="#section-${s.slug}" title="${esc(s.desc)}"><span aria-hidden="true">${s.ico}</span>${esc(s.name)}</a>`).join('')}</div>
+        </div>
       </div></section>
       ${iss.diary && iss.diary.length ? `<section class="block"><div class="wrap">
         <div class="section-head"><div><div class="eyebrow">Dates for your diary</div><h2>Coming up in Shepley</h2></div><a href="#whats-on">Full diary →</a></div>
@@ -94,6 +94,36 @@
       return `<div class="wrap" style="padding:48px 24px 70px"><div class="eyebrow">Archive</div><h1>Back issues</h1>
         <p style="max-width:640px">Every issue of Shepley Magazine. Use search to find articles across all issues.</p>
         <div class="issues" style="margin-top:28px">${ISSUES.map((iss, i) => `<a class="issue" href="#issue-${iss.id}"><div class="cov">${coverImg(iss)}</div><b>${esc(iss.title)}</b><span>Issue ${iss.number}${i === 0 ? ' · Latest' : ''}</span></a>`).join('')}</div></div>`;
+    },
+    advertisers() {
+      const iss = LATEST; const list = iss.advertisers || []; const pages = iss.adverts || [];
+      const cats = [...new Set(list.map(a => a.category))].sort();
+      const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+      const have = new Set(list.map(a => a.letter));
+      const tel = p => p ? `<a class="adv-tel" href="tel:${esc(p.replace(/\s/g, ''))}">${esc(p)}</a>` : '';
+      const webUrl = w => /^https?:/.test(w) ? w : 'https://' + w;
+      return `<div class="wrap" style="padding:48px 24px 70px">
+        <div class="eyebrow">Supporting local business</div><h1>Our advertisers</h1>
+        <p style="max-width:720px">Shepley Magazine is free to every household thanks to the ${list.length} local businesses who advertise in it. Please support them – and tell them you saw them in the magazine.</p>
+        <div class="adv-tools">
+          <input id="advQ" type="search" placeholder="Find a business or service – e.g. plumber, blinds, vet" aria-label="Find an advertiser">
+          <div class="adv-cats"><button class="chip on" data-c="">All</button>${cats.map(c => `<button class="chip" data-c="${esc(c)}">${esc(c)}</button>`).join('')}</div>
+          <nav class="az" aria-label="Jump to letter">${letters.map(l => have.has(l) ? `<a href="#advertisers" data-l="${l}">${l}</a>` : `<span>${l}</span>`).join('')}</nav>
+        </div>
+        <div id="advList">${letters.filter(l => have.has(l)).map(l => `<section class="adv-group" data-letter="${l}"><h2 class="adv-letter" id="adv-${l}">${l}</h2><div class="adv-grid">${list.filter(a => a.letter === l).map((a, i) => `
+          <article class="adv" id="advertiser-${esc(a.id)}" data-cat="${esc(a.category)}" data-text="${esc((a.name + ' ' + a.category + ' ' + a.blurb + ' ' + a.area + ' ' + (a.ocr || '')).toLowerCase())}">
+            <button class="zoom adv-img" aria-label="Enlarge advert for ${esc(a.name)}"><img src="${url(a.img)}" alt="${esc(a.name)}" loading="lazy" width="${a.w}" height="${a.h}"></button>
+            <div class="adv-body">
+              <span class="adv-cat">${esc(a.category)}${a.area ? ' · ' + esc(a.area) : ''}</span>
+              <h3>${esc(a.name)}</h3>
+              <p>${esc(a.blurb)}</p>
+              <div class="adv-links">${tel(a.phone)}${a.web ? `<a href="${esc(webUrl(a.web))}" target="_blank" rel="noopener">Website</a>` : ''}${a.email ? `<a href="mailto:${esc(a.email)}">Email</a>` : ''}${a.article ? `<a href="#article-${iss.id}-${a.article}">Read their story</a>` : ''}</div>
+            </div>
+          </article>`).join('')}</div></section>`).join('')}</div>
+        <p id="advNone" class="sempty" style="display:none">No advertisers match that search.</p>
+        ${pages.length ? `<details class="adv-pages-wrap"><summary>See the advert pages as printed in the magazine</summary><div class="ad-pages">${pages.map(a => `<figure><button class="zoom" aria-label="Enlarge advertisers page ${a.page}"><img src="${url(a.src)}" alt="Advertisers page ${a.page}" loading="lazy" width="${a.w}" height="${a.h}"></button><figcaption>Magazine page ${a.page}</figcaption></figure>`).join('')}</div></details>` : ''}
+        <div class="band" style="margin-top:50px"><div><h2>Advertise in Shepley Magazine</h2><p>Reach every household in Shepley each month. Email <a href="mailto:${esc(SITE.enquiriesEmail)}">${esc(SITE.enquiriesEmail)}</a> for details.</p></div><div><a class="btn" href="mailto:${esc(SITE.enquiriesEmail)}">Get in touch</a></div></div>
+      </div>`;
     },
     contribute() {
       return `<div class="wrap"><div class="article"><div class="eyebrow">Contribute</div><h1>Write for the magazine</h1><div class="body">
@@ -132,6 +162,21 @@
       <div class="grid" style="margin-top:28px">${items.map(card).join('') || '<p>No articles in this section yet.</p>'}</div></div>`;
   }
 
+  const linkify = t => esc(t).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/([\w.+-]+@[\w-]+\.[\w.]+[\w])/g, '<a href="mailto:$1">$1</a>');
+  function renderBody(lines) {
+    let html = '', list = [];
+    const flush = () => { if (list.length) { html += '<ul>' + list.map(li => `<li>${linkify(li)}</li>`).join('') + '</ul>'; list = []; } };
+    for (const l of lines) {
+      if (l.startsWith('- ')) { list.push(l.slice(2)); continue; }
+      flush();
+      if (l.startsWith('## ')) html += `<h3>${esc(l.slice(3))}</h3>`;
+      else if (l.startsWith('— ')) html += `<p class="signoff">${linkify(l)}</p>`;
+      else html += `<p>${linkify(l)}</p>`;
+    }
+    flush(); return html;
+  }
+  const fig = (im, i, cls) => `<figure class="${cls || ''}"><button class="zoom" data-i="${i}" aria-label="Enlarge photo"><img src="${url(im.src)}" alt="${esc(im.caption || '')}" loading="lazy" width="${im.w || ''}" height="${im.h || ''}"></button>${im.caption ? `<figcaption>${esc(im.caption)}</figcaption>` : ''}</figure>`;
+
   function articleView(key) {
     const a = ALL_ARTICLES.find(x => key === x.issue.id + '-' + x.id); if (!a) return views.home();
     const s = secBy(a.section); const more = ALL_ARTICLES.filter(x => x.section === a.section && x !== a).slice(0, 3);
@@ -139,7 +184,10 @@
       <div class="crumbs"><a href="#home">Home</a> › <a href="#section-${s.slug}">${esc(s.name)}</a></div>
       <div class="eyebrow">${esc(s.name)}</div><h1>${esc(a.title)}</h1>
       <div class="byline"><span>By ${esc(a.author)}</span><span>${esc(a.issue.title)} · Issue ${a.issue.number} · page ${a.page}</span></div>
-      <div class="body">${a.body.map(p => `<p>${esc(p)}</p>`).join('')}</div>
+      ${(() => { const ims = a.images || []; const galleryOnly = ims.length > 4;
+        const hero = !galleryOnly && ims.length ? fig(ims[0], 0, 'hero-fig') : '';
+        const rest = galleryOnly ? ims.map((im, i) => fig(im, i)) : ims.slice(1).map((im, i) => fig(im, i + 1));
+        return hero + `<div class="body">${renderBody(a.body)}</div>` + (rest.length ? `<div class="gallery${galleryOnly ? ' big' : ''}">${rest.join('')}</div>` : ''); })()}
       <div class="pdf-note"><span>See the full article with photos in the magazine, page ${a.page}.</span><a class="btn" href="${pdfPage(a.issue, a.page)}" target="_blank" rel="noopener">Open page ${a.page} of the PDF</a></div>
       <div class="chips"><a class="chip" href="#section-${s.slug}">${esc(s.name)}</a><a class="chip" href="#issue-${a.issue.id}">${esc(a.issue.title)}</a></div>
     </article>
@@ -152,20 +200,60 @@
     let html, key = h;
     if (h.startsWith('section-')) { html = sectionView(h.slice(8)); key = 'sections'; }
     else if (h.startsWith('article-')) { html = articleView(h.slice(8)); key = 'sections'; }
+    else if (h.startsWith('advertiser-')) { html = views.advertisers(); key = 'advertisers'; }
     else if (h.startsWith('issue-')) { html = issueView(issueBy(h.slice(6))); key = 'archive'; }
     else if (views[h]) html = views[h]();
     else { html = views.home(); key = 'home'; }
     $('#app').innerHTML = html;
     document.querySelectorAll('nav.main > a').forEach(a => a.classList.toggle('active', a.dataset.r === key));
     $('#ddBtn').classList.toggle('active', key === 'sections');
-    $('#dd').classList.remove('open'); $('#nav').classList.remove('open');
+    $('#dd').classList.remove('open'); $('#nav').classList.remove('open'); $('#burger').classList.remove('open');
     window.scrollTo(0, 0);
     const t = $('#app h1'); document.title = (t && key !== 'home' ? t.textContent + ' – ' : '') + SITE.name;
+    document.querySelectorAll('#app .zoom').forEach(b => b.addEventListener('click', () => openLightbox(b)));
+    if (key === 'advertisers') setupAdvertisers();
+    if (h.startsWith('advertiser-')) { const el = document.getElementById(h); if (el) { setTimeout(() => { window.scrollTo({ top: el.getBoundingClientRect().top + scrollY - 160 }); el.classList.add('flash'); }, 50); } }
     const tabs = document.querySelectorAll('.tabs button');
     tabs.forEach(b => b.addEventListener('click', () => {
       tabs.forEach(x => x.classList.remove('on')); b.classList.add('on');
       $('#diaryBox').innerHTML = b.dataset.t === 'm' ? diaryTable(LATEST.diary || [], ['when', 'event', 'where', 'time']) : diaryTable(SITE.weekly, ['day', 'event', 'where', 'time']);
     }));
+  }
+
+  function setupAdvertisers() {
+    let cat = '';
+    const q = document.getElementById('advQ');
+    const apply = () => {
+      const terms = norm(q.value.trim()).split(/\s+/).filter(Boolean); let shown = 0;
+      document.querySelectorAll('.adv').forEach(el => {
+        const t = norm(el.dataset.text); const ok = (!cat || el.dataset.cat === cat) && terms.every(w => t.includes(w) || (w.length > 4 && t.includes(w.slice(0, -2))));
+        el.style.display = ok ? '' : 'none'; if (ok) shown++;
+      });
+      document.querySelectorAll('.adv-group').forEach(g => { g.style.display = [...g.querySelectorAll('.adv')].some(e => e.style.display !== 'none') ? '' : 'none'; });
+      document.getElementById('advNone').style.display = shown ? 'none' : '';
+    };
+    q.addEventListener('input', apply);
+    document.querySelectorAll('.adv-cats .chip').forEach(b => b.addEventListener('click', () => { cat = b.dataset.c; document.querySelectorAll('.adv-cats .chip').forEach(x => x.classList.toggle('on', x === b)); apply(); }));
+    document.querySelectorAll('.az a').forEach(a => a.addEventListener('click', e => { e.preventDefault(); const t = document.getElementById('adv-' + a.dataset.l); if (t) window.scrollTo({ top: t.getBoundingClientRect().top + scrollY - 140, behavior: 'smooth' }); }));
+  }
+
+  /* ---------- lightbox ---------- */
+  function openLightbox(btn) {
+    const all = [...document.querySelectorAll('#app .zoom')]; let i = all.indexOf(btn);
+    let lb = document.getElementById('lightbox');
+    if (!lb) {
+      lb = document.createElement('div'); lb.id = 'lightbox';
+      lb.innerHTML = '<button class="lb-x" aria-label="Close">×</button><button class="lb-prev" aria-label="Previous">‹</button><figure><img alt=""><figcaption></figcaption></figure><button class="lb-next" aria-label="Next">›</button>';
+      document.body.appendChild(lb);
+      lb.addEventListener('click', e => { if (e.target === lb || e.target.classList.contains('lb-x')) lb.classList.remove('open'); });
+      document.addEventListener('keydown', e => { if (!lb.classList.contains('open')) return; if (e.key === 'Escape') lb.classList.remove('open'); if (e.key === 'ArrowRight') lb._go(1); if (e.key === 'ArrowLeft') lb._go(-1); });
+      lb.querySelector('figure img').addEventListener('click', e => { e.stopPropagation(); lb.classList.toggle('zoomed'); });
+      lb.querySelector('.lb-prev').addEventListener('click', () => lb._go(-1));
+      lb.querySelector('.lb-next').addEventListener('click', () => lb._go(1));
+    }
+    const show = () => { const im = all[i].querySelector('img'); lb.querySelector('img').src = im.src; lb.querySelector('figcaption').textContent = im.alt || ''; lb.querySelector('.lb-prev').style.display = lb.querySelector('.lb-next').style.display = all.length > 1 ? '' : 'none'; };
+    lb._go = d => { i = (i + d + all.length) % all.length; lb.classList.remove('zoomed'); show(); };
+    lb.classList.remove('zoomed'); show(); lb.classList.add('open');
   }
 
   /* ---------- search ---------- */
@@ -176,6 +264,7 @@
     INDEX = [
       ...ALL_ARTICLES.map(a => ({ type: 'Article', cat: secBy(a.section).name, sec: a.section, title: a.title, text: a.summary + ' ' + a.body.join(' ') + ' ' + a.author, href: `#article-${a.issue.id}-${a.id}`, sum: a.summary, issue: a.issue })),
       ...(LATEST.diary || []).map(r => ({ type: 'Event', cat: 'What’s On', sec: 'whats-on', title: r.event, text: Object.values(r).join(' '), href: '#whats-on', sum: `${r.when} ${LATEST.month} · ${r.where} · ${r.time}` })),
+      ...(LATEST.advertisers || []).map(a => ({ type: 'Advert', cat: 'Advertisers', sec: 'advertisers', title: a.name, text: [a.name, a.category, a.blurb, a.area, a.phone, a.ocr || ''].join(' '), href: '#advertiser-' + a.id, sum: `${a.category}${a.phone ? ' · ' + a.phone : ''} – ${a.blurb}` })),
       ...SITE.weekly.map(r => ({ type: 'Weekly', cat: 'Every week', sec: 'whats-on', title: r.event, text: Object.values(r).join(' '), href: '#whats-on', sum: `${r.day} · ${r.where} · ${r.time}` }))
     ];
   }
@@ -192,7 +281,7 @@
 
   function setupSearch() {
     buildIndex();
-    const FILTERS = [['all', 'Everything'], ['whats-on', 'What’s On'], ...SITE.sections.map(s => [s.slug, s.name]), ['pages', 'Magazine pages']];
+    const FILTERS = [['all', 'Everything'], ['whats-on', 'What’s On'], ['advertisers', 'Advertisers'], ...SITE.sections.map(s => [s.slug, s.name]), ['pages', 'Magazine pages']];
     $('#sfilters').innerHTML = FILTERS.map(([k, n]) => `<button class="chip ${k === 'all' ? 'on' : ''}" data-f="${k}">${esc(n)}</button>`).join('');
     $('#sfilters').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if (!b) return; sFilter = b.dataset.f; document.querySelectorAll('#sfilters .chip').forEach(c => c.classList.toggle('on', c === b)); runSearch(); $('#q').focus(); });
     $('#openSearch').addEventListener('click', openS);
@@ -236,7 +325,7 @@
   }
   function resHTML(d, terms, i) {
     const body = (d.type === 'Article' || d.type === 'Page') && terms.length ? snippet(d.text, terms) : d.sum;
-    const label = d.type === 'Article' ? d.cat + (d.issue !== LATEST ? ` <span class="pg">${esc(d.issue.title)}</span>` : '') : d.type === 'Event' ? 'What’s On · This month' : d.type === 'Weekly' ? 'What’s On · Every week' : 'In the magazine (opens PDF)';
+    const label = d.type === 'Article' ? d.cat + (d.issue !== LATEST ? ` <span class="pg">${esc(d.issue.title)}</span>` : '') : d.type === 'Event' ? 'What’s On · This month' : d.type === 'Weekly' ? 'What’s On · Every week' : d.type === 'Advert' ? 'Advertisers' : 'In the magazine (opens PDF)';
     return `<a class="res" data-i="${i}" href="${d.href}"${d.external ? ' target="_blank" rel="noopener"' : ''}><span class="cat">${label}</span><b>${hl(d.title, terms)}</b><p>${hl(body, terms)}</p></a>`;
   }
   function mark() { document.querySelectorAll('.res').forEach(r => r.classList.toggle('sel', +r.dataset.i === sel)); const s = document.querySelector('.res.sel'); if (s) s.scrollIntoView({ block: 'nearest' }); }
