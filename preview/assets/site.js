@@ -27,7 +27,7 @@
   }
 
   /* ---------- shared bits ---------- */
-  const card = a => `<a class="card" href="#article-${a.issue.id}-${a.id}"><span class="cat">${esc(secBy(a.section).name)}</span><h3>${esc(a.title)}</h3><p>${esc(a.summary)}</p><span class="foot">${esc(a.issue.title)} · page ${a.page}</span></a>`;
+  const card = a => `<a class="card${a.images && a.images.length ? ' has-img' : ''}" href="#article-${a.issue.id}-${a.id}">${a.images && a.images.length ? `<span class="card-img"><img src="${url(a.images[0].src)}" alt="" loading="lazy"></span>` : ''}<span class="cat">${esc(secBy(a.section).name)}</span><h3>${esc(a.title)}</h3><p>${esc(a.summary)}</p><span class="foot">${esc(a.issue.title)} · page ${a.page}</span></a>`;
   const diaryTable = (rows, keys) => `<table class="diary"><thead><tr><th>When</th><th>Event</th><th>Where</th><th>Time</th></tr></thead><tbody>${rows.map(r => `<tr>${keys.map(k => `<td>${esc(r[k])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
   const coverImg = (iss, cls) => `<img src="${url(iss.cover)}" alt="${esc(iss.title)} cover" ${cls ? `class="${cls}"` : ''} onerror="this.outerHTML='<div class=&quot;cov-missing&quot;>${esc(iss.title)}<br>Issue ${iss.number}</div>'">`;
 
@@ -132,6 +132,21 @@
       <div class="grid" style="margin-top:28px">${items.map(card).join('') || '<p>No articles in this section yet.</p>'}</div></div>`;
   }
 
+  const linkify = t => esc(t).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/([\w.+-]+@[\w-]+\.[\w.]+[\w])/g, '<a href="mailto:$1">$1</a>');
+  function renderBody(lines) {
+    let html = '', list = [];
+    const flush = () => { if (list.length) { html += '<ul>' + list.map(li => `<li>${linkify(li)}</li>`).join('') + '</ul>'; list = []; } };
+    for (const l of lines) {
+      if (l.startsWith('- ')) { list.push(l.slice(2)); continue; }
+      flush();
+      if (l.startsWith('## ')) html += `<h3>${esc(l.slice(3))}</h3>`;
+      else if (l.startsWith('— ')) html += `<p class="signoff">${linkify(l)}</p>`;
+      else html += `<p>${linkify(l)}</p>`;
+    }
+    flush(); return html;
+  }
+  const fig = (im, i, cls) => `<figure class="${cls || ''}"><button class="zoom" data-i="${i}" aria-label="Enlarge photo"><img src="${url(im.src)}" alt="${esc(im.caption || '')}" loading="lazy" width="${im.w || ''}" height="${im.h || ''}"></button>${im.caption ? `<figcaption>${esc(im.caption)}</figcaption>` : ''}</figure>`;
+
   function articleView(key) {
     const a = ALL_ARTICLES.find(x => key === x.issue.id + '-' + x.id); if (!a) return views.home();
     const s = secBy(a.section); const more = ALL_ARTICLES.filter(x => x.section === a.section && x !== a).slice(0, 3);
@@ -139,7 +154,10 @@
       <div class="crumbs"><a href="#home">Home</a> › <a href="#section-${s.slug}">${esc(s.name)}</a></div>
       <div class="eyebrow">${esc(s.name)}</div><h1>${esc(a.title)}</h1>
       <div class="byline"><span>By ${esc(a.author)}</span><span>${esc(a.issue.title)} · Issue ${a.issue.number} · page ${a.page}</span></div>
-      <div class="body">${a.body.map(p => `<p>${esc(p)}</p>`).join('')}</div>
+      ${(() => { const ims = a.images || []; const galleryOnly = ims.length > 4;
+        const hero = !galleryOnly && ims.length ? fig(ims[0], 0, 'hero-fig') : '';
+        const rest = galleryOnly ? ims.map((im, i) => fig(im, i)) : ims.slice(1).map((im, i) => fig(im, i + 1));
+        return hero + `<div class="body">${renderBody(a.body)}</div>` + (rest.length ? `<div class="gallery${galleryOnly ? ' big' : ''}">${rest.join('')}</div>` : ''); })()}
       <div class="pdf-note"><span>See the full article with photos in the magazine, page ${a.page}.</span><a class="btn" href="${pdfPage(a.issue, a.page)}" target="_blank" rel="noopener">Open page ${a.page} of the PDF</a></div>
       <div class="chips"><a class="chip" href="#section-${s.slug}">${esc(s.name)}</a><a class="chip" href="#issue-${a.issue.id}">${esc(a.issue.title)}</a></div>
     </article>
@@ -161,11 +179,30 @@
     $('#dd').classList.remove('open'); $('#nav').classList.remove('open');
     window.scrollTo(0, 0);
     const t = $('#app h1'); document.title = (t && key !== 'home' ? t.textContent + ' – ' : '') + SITE.name;
+    document.querySelectorAll('#app .zoom').forEach(b => b.addEventListener('click', () => openLightbox(b)));
     const tabs = document.querySelectorAll('.tabs button');
     tabs.forEach(b => b.addEventListener('click', () => {
       tabs.forEach(x => x.classList.remove('on')); b.classList.add('on');
       $('#diaryBox').innerHTML = b.dataset.t === 'm' ? diaryTable(LATEST.diary || [], ['when', 'event', 'where', 'time']) : diaryTable(SITE.weekly, ['day', 'event', 'where', 'time']);
     }));
+  }
+
+  /* ---------- lightbox ---------- */
+  function openLightbox(btn) {
+    const all = [...document.querySelectorAll('#app .zoom')]; let i = all.indexOf(btn);
+    let lb = document.getElementById('lightbox');
+    if (!lb) {
+      lb = document.createElement('div'); lb.id = 'lightbox';
+      lb.innerHTML = '<button class="lb-x" aria-label="Close">×</button><button class="lb-prev" aria-label="Previous">‹</button><figure><img alt=""><figcaption></figcaption></figure><button class="lb-next" aria-label="Next">›</button>';
+      document.body.appendChild(lb);
+      lb.addEventListener('click', e => { if (e.target === lb || e.target.classList.contains('lb-x')) lb.classList.remove('open'); });
+      document.addEventListener('keydown', e => { if (!lb.classList.contains('open')) return; if (e.key === 'Escape') lb.classList.remove('open'); if (e.key === 'ArrowRight') lb._go(1); if (e.key === 'ArrowLeft') lb._go(-1); });
+      lb.querySelector('.lb-prev').addEventListener('click', () => lb._go(-1));
+      lb.querySelector('.lb-next').addEventListener('click', () => lb._go(1));
+    }
+    const show = () => { const im = all[i].querySelector('img'); lb.querySelector('img').src = im.src; lb.querySelector('figcaption').textContent = im.alt || ''; lb.querySelector('.lb-prev').style.display = lb.querySelector('.lb-next').style.display = all.length > 1 ? '' : 'none'; };
+    lb._go = d => { i = (i + d + all.length) % all.length; show(); };
+    show(); lb.classList.add('open');
   }
 
   /* ---------- search ---------- */
