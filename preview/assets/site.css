@@ -161,11 +161,10 @@ footer .small{margin-top:30px;font-size:12px;color:#8f8a7d}
 
 
 /* Compact section strip (home page) */
-.sec-strip{background:var(--white);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:18px 0}
-.sec-strip .wrap{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.sec-strip{display:flex;align-items:baseline;gap:14px;margin-top:28px}
 .sec-strip-label{font:600 12px var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--gold);white-space:nowrap}
-.sec-chips{display:flex;flex-wrap:wrap;gap:7px}
-.sec-chip{display:inline-flex;align-items:center;gap:6px;font:500 14px var(--sans);color:var(--ink);text-decoration:none;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:6px 12px;transition:border-color .15s,background .15s}
+.sec-chips{display:flex;flex-wrap:wrap;gap:6px}
+.sec-chip{display:inline-flex;align-items:center;gap:5px;font:500 12.5px var(--sans);color:var(--ink);text-decoration:none;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 10px;transition:border-color .15s,background .15s}
 .sec-chip:hover{border-color:var(--green);background:var(--paper2);color:var(--green-d)}
-@media(max-width:600px){.sec-chip{font-size:13px;padding:5px 10px}.sec-chips{gap:6px}}
+@media(max-width:900px){.sec-strip{flex-direction:column;gap:8px}}
 @media(max-width:600px){.section-head{flex-direction:column;align-items:flex-start;gap:6px}}

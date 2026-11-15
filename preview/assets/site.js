@@ -66,13 +66,13 @@
           <ul class="featured">${latest.slice(0, 5).map(a => `<li><a href="#article-${iss.id}-${a.id}">${esc(a.title.split(':')[0])} <em>p${a.page}</em></a></li>`).join('')}</ul>
           <div class="actions"><a class="btn" href="${pdfPage(iss)}" target="_blank" rel="noopener">Read the issue</a><a class="btn ghost" href="#latest-issue">What's inside</a></div>
         </div></div></div>
-      <section class="sec-strip"><div class="wrap">
-        <span class="sec-strip-label">Browse by section</span>
-        <div class="sec-chips">${SITE.sections.map(s => `<a class="sec-chip" href="#section-${s.slug}" title="${esc(s.desc)}"><span aria-hidden="true">${s.ico}</span>${esc(s.name)}</a>`).join('')}</div>
-      </div></section>
       <section class="block"><div class="wrap">
         <div class="section-head"><div><div class="eyebrow">In this issue</div><h2>Latest articles</h2></div><a href="#latest-issue">See all ${iss.articles.length} articles →</a></div>
         <div class="grid">${latest.map(card).join('')}</div>
+        <div class="sec-strip">
+          <span class="sec-strip-label">Browse by section</span>
+          <div class="sec-chips">${SITE.sections.map(s => `<a class="sec-chip" href="#section-${s.slug}" title="${esc(s.desc)}"><span aria-hidden="true">${s.ico}</span>${esc(s.name)}</a>`).join('')}</div>
+        </div>
       </div></section>
       ${iss.diary && iss.diary.length ? `<section class="block"><div class="wrap">
         <div class="section-head"><div><div class="eyebrow">Dates for your diary</div><h2>Coming up in Shepley</h2></div><a href="#whats-on">Full diary →</a></div>
