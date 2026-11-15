@@ -57,11 +57,11 @@
       const iss = LATEST;
       const feat = (iss.featured || []).map(id => iss.articles.find(a => a.id === id)).filter(Boolean).map(a => ({ ...a, issue: iss }));
       const latest = feat.length ? feat : iss.articles.slice(0, 6).map(a => ({ ...a, issue: iss }));
-      return `<div class="wrap"><div class="hero">
-        <div class="hero-img"><img src="${url(iss.photo || iss.cover)}" alt="${esc(iss.title)} cover photo" onerror="this.parentNode.classList.add('no-photo');this.remove()">${iss.photoCredit ? `<span class="tag">${esc(iss.photoCredit)}</span>` : ''}</div>
-        <div>
-          <div class="eyebrow">Issue ${iss.number} · ${esc(iss.title)}</div>
-          <h1>${esc(iss.headline || 'The ' + iss.month + ' issue is here')}</h1>
+      return `<div class="wrap"><div class="hero hero2">
+        <div class="hero-img"><img src="${url(iss.photo || iss.cover)}" alt="${esc(iss.title)} cover photo" onerror="this.parentNode.classList.add('no-photo');this.remove()">
+          <div class="hero-over"><div class="eyebrow-light">Issue ${iss.number} · ${esc(iss.title)}</div><h1>${esc(iss.headline || 'The ' + iss.month + ' issue is here')}</h1></div>
+          ${iss.photoCredit ? `<span class="tag">${esc(iss.photoCredit)}</span>` : ''}</div>
+        <div class="hero-side">
           <p class="lede">${esc(iss.lede || '')}</p>
           <ul class="featured">${latest.slice(0, 5).map(a => `<li><a href="#article-${iss.id}-${a.id}">${esc(a.title.split(':')[0])} <em>p${a.page}</em></a></li>`).join('')}</ul>
           <div class="actions"><a class="btn" href="${pdfPage(iss)}" target="_blank" rel="noopener">Read the issue</a><a class="btn ghost" href="#latest-issue">What's inside</a></div>
