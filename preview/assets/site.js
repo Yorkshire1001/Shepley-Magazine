@@ -6,7 +6,7 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const url = p => BASE + p;
 
-  let SITE, ISSUES, LATEST, ALL_ARTICLES = [];
+  let SITE, ISSUES, LATEST, ALL_ARTICLES = [], ADVERTISERS = [];
   const secBy = slug => SITE.sections.find(x => x.slug === slug) || { slug, name: slug, ico: '', desc: '' };
   const issueBy = id => ISSUES.find(i => i.id === id);
   const pdfPage = (issue, page) => url(issue.pdf) + (page ? '#page=' + page : '');
@@ -20,6 +20,11 @@
     if (!data) data = await getJSON('data/issues.json');
     ISSUES = data.issues.slice().sort((a, b) => b.id.localeCompare(a.id));
     LATEST = ISSUES[0];
+    let adv = null;
+    if (PREVIEW) { try { adv = await getJSON('data/advertisers-preview.json'); } catch (e) {} }
+    if (!adv) { try { adv = await getJSON('data/advertisers.json'); } catch (e) { adv = { advertisers: [] }; } }
+    const mIdx = id => { const [y, m] = id.split('-').map(Number); return y * 12 + m; };
+    ADVERTISERS = (adv.advertisers || []).filter(a => mIdx(LATEST.id) - mIdx(a.lastSeen) < 12);
     ALL_ARTICLES = ISSUES.flatMap(iss => iss.articles.map(a => ({ ...a, issue: iss })));
     buildChrome();
     render();
@@ -96,7 +101,7 @@
         <div class="issues" style="margin-top:28px">${ISSUES.map((iss, i) => `<a class="issue" href="#issue-${iss.id}"><div class="cov">${coverImg(iss)}</div><b>${esc(iss.title)}</b><span>Issue ${iss.number}${i === 0 ? ' · Latest' : ''}</span></a>`).join('')}</div></div>`;
     },
     advertisers() {
-      const iss = LATEST; const list = iss.advertisers || []; const pages = iss.adverts || [];
+      const iss = LATEST; const list = ADVERTISERS; const pages = iss.adverts || [];
       const cats = [...new Set(list.map(a => a.category))].sort();
       const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
       const have = new Set(list.map(a => a.letter));
@@ -116,7 +121,7 @@
             <div class="adv-body">
               <span class="adv-cat">${esc(a.category)}${a.area ? ' · ' + esc(a.area) : ''}</span>
               <h3>${esc(a.name)}</h3>
-              <p>${esc(a.blurb)}</p>
+              <p>${esc(a.blurb)}</p>${a.lastSeen !== iss.id ? `<span class="adv-last">Last advertised: ${esc((ISSUES.find(x => x.id === a.lastSeen) || {}).title || a.lastSeen)}</span>` : ''}
               <div class="adv-links">${tel(a.phone)}${a.web ? `<a href="${esc(webUrl(a.web))}" target="_blank" rel="noopener">Website</a>` : ''}${a.email ? `<a href="mailto:${esc(a.email)}">Email</a>` : ''}${a.article ? `<a href="#article-${iss.id}-${a.article}">Read their story</a>` : ''}</div>
             </div>
           </article>`).join('')}</div></section>`).join('')}</div>
@@ -264,7 +269,7 @@
     INDEX = [
       ...ALL_ARTICLES.map(a => ({ type: 'Article', cat: secBy(a.section).name, sec: a.section, title: a.title, text: a.summary + ' ' + a.body.join(' ') + ' ' + a.author, href: `#article-${a.issue.id}-${a.id}`, sum: a.summary, issue: a.issue })),
       ...(LATEST.diary || []).map(r => ({ type: 'Event', cat: 'What’s On', sec: 'whats-on', title: r.event, text: Object.values(r).join(' '), href: '#whats-on', sum: `${r.when} ${LATEST.month} · ${r.where} · ${r.time}` })),
-      ...(LATEST.advertisers || []).map(a => ({ type: 'Advert', cat: 'Advertisers', sec: 'advertisers', title: a.name, text: [a.name, a.category, a.blurb, a.area, a.phone, a.ocr || ''].join(' '), href: '#advertiser-' + a.id, sum: `${a.category}${a.phone ? ' · ' + a.phone : ''} – ${a.blurb}` })),
+      ...ADVERTISERS.map(a => ({ type: 'Advert', cat: 'Advertisers', sec: 'advertisers', title: a.name, text: [a.name, a.category, a.blurb, a.area, a.phone, a.ocr || ''].join(' '), href: '#advertiser-' + a.id, sum: `${a.category}${a.phone ? ' · ' + a.phone : ''} – ${a.blurb}` })),
       ...SITE.weekly.map(r => ({ type: 'Weekly', cat: 'Every week', sec: 'whats-on', title: r.event, text: Object.values(r).join(' '), href: '#whats-on', sum: `${r.day} · ${r.where} · ${r.time}` }))
     ];
   }
