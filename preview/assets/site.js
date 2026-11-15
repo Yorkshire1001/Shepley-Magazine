@@ -95,6 +95,18 @@
         <p style="max-width:640px">Every issue of Shepley Magazine. Use search to find articles across all issues.</p>
         <div class="issues" style="margin-top:28px">${ISSUES.map((iss, i) => `<a class="issue" href="#issue-${iss.id}"><div class="cov">${coverImg(iss)}</div><b>${esc(iss.title)}</b><span>Issue ${iss.number}${i === 0 ? ' · Latest' : ''}</span></a>`).join('')}</div></div>`;
     },
+    advertisers() {
+      const iss = LATEST; const ads = iss.adverts || [];
+      const adArticles = iss.articles.filter(a => /advertisers/i.test(a.title)).map(a => ({ ...a, issue: iss }));
+      return `<div class="wrap" style="padding:48px 24px 70px">
+        <div class="eyebrow">Supporting local business</div><h1>Our advertisers</h1>
+        <p style="max-width:720px">Shepley Magazine is free to every household thanks to the local businesses who advertise in it. Please support them – and tell them you saw them in the magazine. Click any page to enlarge it, then click again to zoom in.</p>
+        <p style="font:500 14px var(--sans);color:var(--muted)">Looking for a plumber, a cleaner or a takeaway? Use <a href="#advertisers" onclick="document.getElementById('openSearch').click();return false;">search</a> – it reads every advert.</p>
+        <div class="ad-pages">${ads.map((a, i) => `<figure><button class="zoom" data-i="${i}" aria-label="Enlarge advertisers page ${a.page}"><img src="${url(a.src)}" alt="Advertisers in the ${esc(iss.title)} issue, page ${a.page}" loading="lazy" width="${a.w}" height="${a.h}"></button><figcaption>Magazine page ${a.page}</figcaption></figure>`).join('')}</div>
+        ${adArticles.length ? `<div class="section-head" style="margin-top:44px"><div><div class="eyebrow">Hear from our advertisers</div><h2>Meet the people behind the adverts</h2></div></div><div class="grid">${adArticles.map(card).join('')}</div>` : ''}
+        <div class="band" style="margin-top:50px"><div><h2>Advertise in Shepley Magazine</h2><p>Reach every household in Shepley each month. Email <a style="color:#fff" href="mailto:${esc(SITE.enquiriesEmail)}">${esc(SITE.enquiriesEmail)}</a> for details.</p></div><div><a class="btn" href="mailto:${esc(SITE.enquiriesEmail)}">Get in touch</a></div></div>
+      </div>`;
+    },
     contribute() {
       return `<div class="wrap"><div class="article"><div class="eyebrow">Contribute</div><h1>Write for the magazine</h1><div class="body">
         <p>Shepley Magazine is written by the village. Club reports, letters, photographs, memories and event listings are all welcome.</p>
@@ -197,12 +209,13 @@
       document.body.appendChild(lb);
       lb.addEventListener('click', e => { if (e.target === lb || e.target.classList.contains('lb-x')) lb.classList.remove('open'); });
       document.addEventListener('keydown', e => { if (!lb.classList.contains('open')) return; if (e.key === 'Escape') lb.classList.remove('open'); if (e.key === 'ArrowRight') lb._go(1); if (e.key === 'ArrowLeft') lb._go(-1); });
+      lb.querySelector('figure img').addEventListener('click', e => { e.stopPropagation(); lb.classList.toggle('zoomed'); });
       lb.querySelector('.lb-prev').addEventListener('click', () => lb._go(-1));
       lb.querySelector('.lb-next').addEventListener('click', () => lb._go(1));
     }
     const show = () => { const im = all[i].querySelector('img'); lb.querySelector('img').src = im.src; lb.querySelector('figcaption').textContent = im.alt || ''; lb.querySelector('.lb-prev').style.display = lb.querySelector('.lb-next').style.display = all.length > 1 ? '' : 'none'; };
-    lb._go = d => { i = (i + d + all.length) % all.length; show(); };
-    show(); lb.classList.add('open');
+    lb._go = d => { i = (i + d + all.length) % all.length; lb.classList.remove('zoomed'); show(); };
+    lb.classList.remove('zoomed'); show(); lb.classList.add('open');
   }
 
   /* ---------- search ---------- */
@@ -213,6 +226,7 @@
     INDEX = [
       ...ALL_ARTICLES.map(a => ({ type: 'Article', cat: secBy(a.section).name, sec: a.section, title: a.title, text: a.summary + ' ' + a.body.join(' ') + ' ' + a.author, href: `#article-${a.issue.id}-${a.id}`, sum: a.summary, issue: a.issue })),
       ...(LATEST.diary || []).map(r => ({ type: 'Event', cat: 'What’s On', sec: 'whats-on', title: r.event, text: Object.values(r).join(' '), href: '#whats-on', sum: `${r.when} ${LATEST.month} · ${r.where} · ${r.time}` })),
+      ...(LATEST.adverts || []).map(a => ({ type: 'Advert', cat: 'Advertisers', sec: 'advertisers', title: `Advertisers – magazine page ${a.page}`, text: a.text, href: '#advertisers', sum: 'Local businesses advertising in this issue' })),
       ...SITE.weekly.map(r => ({ type: 'Weekly', cat: 'Every week', sec: 'whats-on', title: r.event, text: Object.values(r).join(' '), href: '#whats-on', sum: `${r.day} · ${r.where} · ${r.time}` }))
     ];
   }
@@ -229,7 +243,7 @@
 
   function setupSearch() {
     buildIndex();
-    const FILTERS = [['all', 'Everything'], ['whats-on', 'What’s On'], ...SITE.sections.map(s => [s.slug, s.name]), ['pages', 'Magazine pages']];
+    const FILTERS = [['all', 'Everything'], ['whats-on', 'What’s On'], ['advertisers', 'Advertisers'], ...SITE.sections.map(s => [s.slug, s.name]), ['pages', 'Magazine pages']];
     $('#sfilters').innerHTML = FILTERS.map(([k, n]) => `<button class="chip ${k === 'all' ? 'on' : ''}" data-f="${k}">${esc(n)}</button>`).join('');
     $('#sfilters').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if (!b) return; sFilter = b.dataset.f; document.querySelectorAll('#sfilters .chip').forEach(c => c.classList.toggle('on', c === b)); runSearch(); $('#q').focus(); });
     $('#openSearch').addEventListener('click', openS);
@@ -265,15 +279,15 @@
     current = pool.map(d => {
       const T = norm(d.title), X = norm(d.text), C = norm(d.cat); let score = 0;
       for (const t of terms) { if (!X.includes(t) && !T.includes(t) && !C.includes(t)) return null; score += (T.includes(t) ? 5 : 0) + (C.includes(t) ? 3 : 0) + Math.min(X.split(t).length - 1, 10); }
-      if (d.type === 'Article') score += 3; if (d.type === 'Page') score -= 2;
+      if (d.type === 'Article') score += 3; if (d.type === 'Page' || d.type === 'Advert') score -= 2;
       return { ...d, score };
     }).filter(Boolean).sort((a, b) => b.score - a.score).slice(0, 40);
     $('#sresults').innerHTML = current.length ? current.map((d, i) => resHTML(d, terms, i)).join('') : `<div class="sempty">No results for “${esc(raw)}”. Try another word, or browse <a href="#archive">back issues</a>.</div>`;
     sel = 0; mark();
   }
   function resHTML(d, terms, i) {
-    const body = (d.type === 'Article' || d.type === 'Page') && terms.length ? snippet(d.text, terms) : d.sum;
-    const label = d.type === 'Article' ? d.cat + (d.issue !== LATEST ? ` <span class="pg">${esc(d.issue.title)}</span>` : '') : d.type === 'Event' ? 'What’s On · This month' : d.type === 'Weekly' ? 'What’s On · Every week' : 'In the magazine (opens PDF)';
+    const body = (d.type === 'Article' || d.type === 'Page' || d.type === 'Advert') && terms.length ? snippet(d.text, terms) : d.sum;
+    const label = d.type === 'Article' ? d.cat + (d.issue !== LATEST ? ` <span class="pg">${esc(d.issue.title)}</span>` : '') : d.type === 'Event' ? 'What’s On · This month' : d.type === 'Weekly' ? 'What’s On · Every week' : d.type === 'Advert' ? 'Advertisers' : 'In the magazine (opens PDF)';
     return `<a class="res" data-i="${i}" href="${d.href}"${d.external ? ' target="_blank" rel="noopener"' : ''}><span class="cat">${label}</span><b>${hl(d.title, terms)}</b><p>${hl(body, terms)}</p></a>`;
   }
   function mark() { document.querySelectorAll('.res').forEach(r => r.classList.toggle('sel', +r.dataset.i === sel)); const s = document.querySelector('.res.sel'); if (s) s.scrollIntoView({ block: 'nearest' }); }
