@@ -36,7 +36,7 @@
     const dd = $('#dd');
     $('#ddBtn').addEventListener('click', e => { e.stopPropagation(); dd.classList.toggle('open'); $('#ddBtn').setAttribute('aria-expanded', dd.classList.contains('open')); });
     document.addEventListener('click', e => { if (!dd.contains(e.target)) dd.classList.remove('open'); });
-    $('#burger').addEventListener('click', () => $('#nav').classList.toggle('open'));
+    $('#burger').addEventListener('click', () => { const o = $('#nav').classList.toggle('open'); $('#burger').classList.toggle('open', o); $('#burger').setAttribute('aria-expanded', o); });
     $('#footer').innerHTML = `<div class="wrap"><div class="cols">
       <div><div style="font-family:var(--serif);font-size:30px;color:#fff;line-height:1">${esc(SITE.name)}</div><p>${esc(SITE.about)}</p></div>
       <div><h4>Get in touch</h4>Contributions (by the ${esc(SITE.deadlineDay)}):<br><a href="mailto:${esc(SITE.contributionsEmail)}">${esc(SITE.contributionsEmail)}</a><br>Advertising &amp; enquiries:<br><a href="mailto:${esc(SITE.enquiriesEmail)}">${esc(SITE.enquiriesEmail)}</a></div>
@@ -207,7 +207,7 @@
     $('#app').innerHTML = html;
     document.querySelectorAll('nav.main > a').forEach(a => a.classList.toggle('active', a.dataset.r === key));
     $('#ddBtn').classList.toggle('active', key === 'sections');
-    $('#dd').classList.remove('open'); $('#nav').classList.remove('open');
+    $('#dd').classList.remove('open'); $('#nav').classList.remove('open'); $('#burger').classList.remove('open');
     window.scrollTo(0, 0);
     const t = $('#app h1'); document.title = (t && key !== 'home' ? t.textContent + ' – ' : '') + SITE.name;
     document.querySelectorAll('#app .zoom').forEach(b => b.addEventListener('click', () => openLightbox(b)));
