@@ -338,3 +338,11 @@ nav.main{padding-bottom:10px}
   .dd-panel a span{display:none}
 }
 @media(max-width:420px){.mast .name{font-size:24px}.head-tools{gap:8px}}
+/* Tighter spacing between home sections */
+.hero2 + * , .hero + *{margin-top:0}
+@media(max-width:900px){
+  .hero2{padding-bottom:8px}
+  section.block{padding:32px 0}
+  .section-head{margin-bottom:16px}
+  .section-head h2{margin-bottom:0}
+}
