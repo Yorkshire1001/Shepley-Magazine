@@ -14,7 +14,8 @@
   async function getJSON(p) { const r = await fetch(url(p), { cache: 'no-cache' }); if (!r.ok) throw new Error(p); return r.json(); }
 
   async function load() {
-    SITE = await getJSON('data/site.json');
+    SITE = null; if (PREVIEW) { try { SITE = await getJSON('data/site-preview.json'); } catch (e) {} }
+    if (!SITE) SITE = await getJSON('data/site.json');
     let data;
     if (PREVIEW) { try { data = await getJSON('data/issues-preview.json'); } catch (e) { data = null; } }
     if (!data) data = await getJSON('data/issues.json');
@@ -68,7 +69,8 @@
           ${iss.photoCredit ? `<span class="tag">${esc(iss.photoCredit)}</span>` : ''}</div>
         <div class="hero-side">
           <p class="lede">${esc(iss.lede || '')}</p>
-          <div class="hero-list"><div class="hero-list-label">In this issue</div><ol class="hl-list">${latest.slice(0, 5).map((a, n) => `<li><a href="#article-${iss.id}-${a.id}"><span class="hl-n">${String(n + 1).padStart(2, '0')}</span><span class="hl-t"><small>${esc(secBy(a.section).name)}</small>${esc(a.title.split(':')[0].split(' – ')[0])}</span><span class="hl-p">p${a.page}</span></a></li>`).join('')}</ol></div>
+          ${(() => { const ed = iss.articles.find(a => a.section === 'editorial'); return ed ? `<a class="hero-ed" href="#article-${iss.id}-${ed.id}"><span class="hero-ed-label">Editorial</span><span class="hero-ed-title">${esc(ed.title.replace(/^Editorial:\s*/, ''))}</span><span class="hero-ed-more">Read the editorial →</span></a>` : ''; })()}
+          <div class="hero-list"><div class="hero-list-label">In this issue</div><ol class="hl-list">${latest.filter(a => a.section !== 'editorial').slice(0, 4).map((a, n) => `<li><a href="#article-${iss.id}-${a.id}"><span class="hl-n">${String(n + 1).padStart(2, '0')}</span><span class="hl-t"><small>${esc(secBy(a.section).name)}</small>${esc(a.title.split(':')[0].split(' – ')[0])}</span><span class="hl-p">p${a.page}</span></a></li>`).join('')}</ol></div>
           <div class="actions"><a class="btn" href="${pdfPage(iss)}" target="_blank" rel="noopener">Read the issue</a><a class="btn ghost" href="#latest-issue">What's inside</a></div>
         </div></div></div>
       <section class="block"><div class="wrap">

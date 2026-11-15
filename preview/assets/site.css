@@ -351,3 +351,11 @@ header.site{background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px
 nav.main > a:hover, nav.main .dd > button:hover, nav.main a.active, nav.main .dd > button.active{background:var(--paper)}
 .search-btn{background:var(--paper)}
 .adv-last{font:500 12px var(--sans);color:var(--muted);margin-top:4px}
+
+.hero-ed{display:block;text-decoration:none;color:var(--ink);background:var(--paper);border-left:3px solid var(--gold);border-radius:4px;padding:12px 16px}
+.hero-ed:hover{background:var(--paper2)}
+.hero-ed-label{display:block;font:600 11px var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.hero-ed-title{display:block;font-family:var(--serif);font-size:20px;line-height:1.25;margin:3px 0 2px}
+.hero-ed-more{font:600 13px var(--sans);color:var(--green-d)}
+@media(min-width:901px) and (max-width:1240px){.hl-list li:nth-child(4){display:none}.hero2 .hero-side .lede{font-size:17px}.hero2 .hero-side{padding:22px 24px}}
+@media(min-width:901px) and (max-width:1020px){.hl-list li:nth-child(3){display:none}}
