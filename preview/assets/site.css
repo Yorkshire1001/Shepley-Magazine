@@ -203,3 +203,13 @@ footer .small{margin-top:30px;font-size:12px;color:#8f8a7d}
 #lightbox .lb-next{right:18px;top:50%;transform:translateY(-50%)}
 .card-img img{object-position:center 30%}
 @media(max-width:600px){.article .hero-fig img{max-height:340px}.gallery{grid-template-columns:1fr 1fr;gap:10px}.gallery.big{grid-template-columns:1fr}}
+
+/* Tidier header: masthead on one line */
+.head-row{padding:22px 0 14px}
+.mast{align-items:center;gap:20px}
+.mast .name{font-size:40px;line-height:1;letter-spacing:-.3px;white-space:nowrap}
+.mast .name small{display:inline;font-size:inherit;margin-left:.22em}
+.mast .meta{border-left:1px solid var(--line);padding-left:16px;line-height:1.45}
+nav.main{padding-bottom:10px}
+@media(max-width:900px){.mast .name{font-size:30px}.head-row{padding:16px 0 12px}}
+@media(max-width:420px){.mast .name{font-size:26px}}
