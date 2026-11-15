@@ -57,24 +57,17 @@
       const iss = LATEST;
       const feat = (iss.featured || []).map(id => iss.articles.find(a => a.id === id)).filter(Boolean).map(a => ({ ...a, issue: iss }));
       const latest = feat.length ? feat : iss.articles.slice(0, 6).map(a => ({ ...a, issue: iss }));
-      return `<section class="cover-hero">
-        <div class="cover-bg"><img src="${url(iss.photo || iss.cover)}" alt="" onerror="this.remove()"></div>
-        <div class="wrap cover-inner">
-          <div class="cover-text">
-            <div class="cover-eyebrow"><span>Issue ${iss.number}</span><span class="dot"></span><span>Out now</span></div>
-            <h1>${esc(iss.title)}</h1>
-            <p>${esc(iss.lede || '')}</p>
-            <div class="actions"><a class="btn light" href="${pdfPage(iss)}" target="_blank" rel="noopener">Read the issue</a><a class="btn outline-light" href="#latest-issue">What's inside</a></div>
-          </div>
-          ${iss.photoCredit ? `<span class="cover-credit">${esc(iss.photoCredit)}</span>` : ''}
-        </div>
-      </section>
-      <section class="highlights"><div class="wrap">
-        <div class="hl-label">In this issue</div>
-        <div class="hl-row">${latest.slice(0, 4).map(a => `<a class="hl" href="#article-${iss.id}-${a.id}"><span class="hl-cat">${esc(secBy(a.section).name)}</span><span class="hl-title">${esc(a.title.split(':')[0].split(' – ')[0])}</span><span class="hl-pg">Page ${a.page}</span></a>`).join('')}</div>
-      </div></section>
+      return `<div class="wrap"><div class="hero">
+        <div class="hero-img"><img src="${url(iss.photo || iss.cover)}" alt="${esc(iss.title)} cover photo" onerror="this.parentNode.classList.add('no-photo');this.remove()">${iss.photoCredit ? `<span class="tag">${esc(iss.photoCredit)}</span>` : ''}</div>
+        <div>
+          <div class="eyebrow">Issue ${iss.number} · ${esc(iss.title)}</div>
+          <h1>${esc(iss.headline || 'The ' + iss.month + ' issue is here')}</h1>
+          <p class="lede">${esc(iss.lede || '')}</p>
+          <ul class="featured">${latest.slice(0, 5).map(a => `<li><a href="#article-${iss.id}-${a.id}">${esc(a.title.split(':')[0])} <em>p${a.page}</em></a></li>`).join('')}</ul>
+          <div class="actions"><a class="btn" href="${pdfPage(iss)}" target="_blank" rel="noopener">Read the issue</a><a class="btn ghost" href="#latest-issue">What's inside</a></div>
+        </div></div></div>
       <section class="block"><div class="wrap">
-        <div class="section-head"><div><div class="eyebrow">From this issue</div><h2>Latest articles</h2></div><a href="#latest-issue">See all ${iss.articles.length} articles →</a></div>
+        <div class="section-head"><div><div class="eyebrow">In this issue</div><h2>Latest articles</h2></div><a href="#latest-issue">See all ${iss.articles.length} articles →</a></div>
         <div class="grid">${latest.map(card).join('')}</div>
         <div class="sec-strip">
           <span class="sec-strip-label">Browse by section</span>
