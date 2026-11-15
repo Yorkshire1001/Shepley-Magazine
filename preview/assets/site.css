@@ -280,3 +280,16 @@ nav.main{padding-bottom:10px}
 @keyframes advflash{0%,40%{box-shadow:0 0 0 4px var(--gold)}100%{box-shadow:0 0 0 0 transparent}}
 @media(max-width:700px){.adv-tools{position:static}}
 .adv-tools{position:static}
+
+/* Show the whole cover photo, uncropped and larger */
+.hero2{grid-template-columns:1.45fr 1fr;gap:44px;align-items:stretch}
+.hero2 .hero-img{aspect-ratio:1600/1521;min-height:0;height:auto}
+.hero2 .hero-img > img{object-fit:contain;background:#d8d4c8}
+.hero2 .hero-side{justify-content:space-between;gap:20px}
+.hero2 .hero-side .lede{font-size:21px}
+.hero2 .featured a{padding:12px 2px}
+@media(max-width:900px){.hero2{grid-template-columns:1fr}}
+
+.hero2 .hero-side .actions{margin-top:0}
+.hero-list-label{font:600 12px var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.hero2 .featured a{padding:13px 2px;font-size:15.5px}
