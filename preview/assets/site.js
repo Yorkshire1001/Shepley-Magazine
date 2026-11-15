@@ -96,15 +96,33 @@
         <div class="issues" style="margin-top:28px">${ISSUES.map((iss, i) => `<a class="issue" href="#issue-${iss.id}"><div class="cov">${coverImg(iss)}</div><b>${esc(iss.title)}</b><span>Issue ${iss.number}${i === 0 ? ' · Latest' : ''}</span></a>`).join('')}</div></div>`;
     },
     advertisers() {
-      const iss = LATEST; const ads = iss.adverts || [];
-      const adArticles = iss.articles.filter(a => /advertisers/i.test(a.title)).map(a => ({ ...a, issue: iss }));
+      const iss = LATEST; const list = iss.advertisers || []; const pages = iss.adverts || [];
+      const cats = [...new Set(list.map(a => a.category))].sort();
+      const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+      const have = new Set(list.map(a => a.letter));
+      const tel = p => p ? `<a class="adv-tel" href="tel:${esc(p.replace(/\s/g, ''))}">${esc(p)}</a>` : '';
+      const webUrl = w => /^https?:/.test(w) ? w : 'https://' + w;
       return `<div class="wrap" style="padding:48px 24px 70px">
         <div class="eyebrow">Supporting local business</div><h1>Our advertisers</h1>
-        <p style="max-width:720px">Shepley Magazine is free to every household thanks to the local businesses who advertise in it. Please support them – and tell them you saw them in the magazine. Click any page to enlarge it, then click again to zoom in.</p>
-        <p style="font:500 14px var(--sans);color:var(--muted)">Looking for a plumber, a cleaner or a takeaway? Use <a href="#advertisers" onclick="document.getElementById('openSearch').click();return false;">search</a> – it reads every advert.</p>
-        <div class="ad-pages">${ads.map((a, i) => `<figure><button class="zoom" data-i="${i}" aria-label="Enlarge advertisers page ${a.page}"><img src="${url(a.src)}" alt="Advertisers in the ${esc(iss.title)} issue, page ${a.page}" loading="lazy" width="${a.w}" height="${a.h}"></button><figcaption>Magazine page ${a.page}</figcaption></figure>`).join('')}</div>
-        ${adArticles.length ? `<div class="section-head" style="margin-top:44px"><div><div class="eyebrow">Hear from our advertisers</div><h2>Meet the people behind the adverts</h2></div></div><div class="grid">${adArticles.map(card).join('')}</div>` : ''}
-        <div class="band" style="margin-top:50px"><div><h2>Advertise in Shepley Magazine</h2><p>Reach every household in Shepley each month. Email <a style="color:#fff" href="mailto:${esc(SITE.enquiriesEmail)}">${esc(SITE.enquiriesEmail)}</a> for details.</p></div><div><a class="btn" href="mailto:${esc(SITE.enquiriesEmail)}">Get in touch</a></div></div>
+        <p style="max-width:720px">Shepley Magazine is free to every household thanks to the ${list.length} local businesses who advertise in it. Please support them – and tell them you saw them in the magazine.</p>
+        <div class="adv-tools">
+          <input id="advQ" type="search" placeholder="Find a business or service – e.g. plumber, blinds, vet" aria-label="Find an advertiser">
+          <div class="adv-cats"><button class="chip on" data-c="">All</button>${cats.map(c => `<button class="chip" data-c="${esc(c)}">${esc(c)}</button>`).join('')}</div>
+          <nav class="az" aria-label="Jump to letter">${letters.map(l => have.has(l) ? `<a href="#advertisers" data-l="${l}">${l}</a>` : `<span>${l}</span>`).join('')}</nav>
+        </div>
+        <div id="advList">${letters.filter(l => have.has(l)).map(l => `<section class="adv-group" data-letter="${l}"><h2 class="adv-letter" id="adv-${l}">${l}</h2><div class="adv-grid">${list.filter(a => a.letter === l).map((a, i) => `
+          <article class="adv" id="advertiser-${esc(a.id)}" data-cat="${esc(a.category)}" data-text="${esc((a.name + ' ' + a.category + ' ' + a.blurb + ' ' + a.area + ' ' + (a.ocr || '')).toLowerCase())}">
+            <button class="zoom adv-img" aria-label="Enlarge advert for ${esc(a.name)}"><img src="${url(a.img)}" alt="${esc(a.name)}" loading="lazy" width="${a.w}" height="${a.h}"></button>
+            <div class="adv-body">
+              <span class="adv-cat">${esc(a.category)}${a.area ? ' · ' + esc(a.area) : ''}</span>
+              <h3>${esc(a.name)}</h3>
+              <p>${esc(a.blurb)}</p>
+              <div class="adv-links">${tel(a.phone)}${a.web ? `<a href="${esc(webUrl(a.web))}" target="_blank" rel="noopener">Website</a>` : ''}${a.email ? `<a href="mailto:${esc(a.email)}">Email</a>` : ''}${a.article ? `<a href="#article-${iss.id}-${a.article}">Read their story</a>` : ''}</div>
+            </div>
+          </article>`).join('')}</div></section>`).join('')}</div>
+        <p id="advNone" class="sempty" style="display:none">No advertisers match that search.</p>
+        ${pages.length ? `<details class="adv-pages-wrap"><summary>See the advert pages as printed in the magazine</summary><div class="ad-pages">${pages.map(a => `<figure><button class="zoom" aria-label="Enlarge advertisers page ${a.page}"><img src="${url(a.src)}" alt="Advertisers page ${a.page}" loading="lazy" width="${a.w}" height="${a.h}"></button><figcaption>Magazine page ${a.page}</figcaption></figure>`).join('')}</div></details>` : ''}
+        <div class="band" style="margin-top:50px"><div><h2>Advertise in Shepley Magazine</h2><p>Reach every household in Shepley each month. Email <a href="mailto:${esc(SITE.enquiriesEmail)}">${esc(SITE.enquiriesEmail)}</a> for details.</p></div><div><a class="btn" href="mailto:${esc(SITE.enquiriesEmail)}">Get in touch</a></div></div>
       </div>`;
     },
     contribute() {
@@ -182,6 +200,7 @@
     let html, key = h;
     if (h.startsWith('section-')) { html = sectionView(h.slice(8)); key = 'sections'; }
     else if (h.startsWith('article-')) { html = articleView(h.slice(8)); key = 'sections'; }
+    else if (h.startsWith('advertiser-')) { html = views.advertisers(); key = 'advertisers'; }
     else if (h.startsWith('issue-')) { html = issueView(issueBy(h.slice(6))); key = 'archive'; }
     else if (views[h]) html = views[h]();
     else { html = views.home(); key = 'home'; }
@@ -192,11 +211,30 @@
     window.scrollTo(0, 0);
     const t = $('#app h1'); document.title = (t && key !== 'home' ? t.textContent + ' – ' : '') + SITE.name;
     document.querySelectorAll('#app .zoom').forEach(b => b.addEventListener('click', () => openLightbox(b)));
+    if (key === 'advertisers') setupAdvertisers();
+    if (h.startsWith('advertiser-')) { const el = document.getElementById(h); if (el) { setTimeout(() => { window.scrollTo({ top: el.getBoundingClientRect().top + scrollY - 160 }); el.classList.add('flash'); }, 50); } }
     const tabs = document.querySelectorAll('.tabs button');
     tabs.forEach(b => b.addEventListener('click', () => {
       tabs.forEach(x => x.classList.remove('on')); b.classList.add('on');
       $('#diaryBox').innerHTML = b.dataset.t === 'm' ? diaryTable(LATEST.diary || [], ['when', 'event', 'where', 'time']) : diaryTable(SITE.weekly, ['day', 'event', 'where', 'time']);
     }));
+  }
+
+  function setupAdvertisers() {
+    let cat = '';
+    const q = document.getElementById('advQ');
+    const apply = () => {
+      const terms = norm(q.value.trim()).split(/\s+/).filter(Boolean); let shown = 0;
+      document.querySelectorAll('.adv').forEach(el => {
+        const t = norm(el.dataset.text); const ok = (!cat || el.dataset.cat === cat) && terms.every(w => t.includes(w) || (w.length > 4 && t.includes(w.slice(0, -2))));
+        el.style.display = ok ? '' : 'none'; if (ok) shown++;
+      });
+      document.querySelectorAll('.adv-group').forEach(g => { g.style.display = [...g.querySelectorAll('.adv')].some(e => e.style.display !== 'none') ? '' : 'none'; });
+      document.getElementById('advNone').style.display = shown ? 'none' : '';
+    };
+    q.addEventListener('input', apply);
+    document.querySelectorAll('.adv-cats .chip').forEach(b => b.addEventListener('click', () => { cat = b.dataset.c; document.querySelectorAll('.adv-cats .chip').forEach(x => x.classList.toggle('on', x === b)); apply(); }));
+    document.querySelectorAll('.az a').forEach(a => a.addEventListener('click', e => { e.preventDefault(); const t = document.getElementById('adv-' + a.dataset.l); if (t) window.scrollTo({ top: t.getBoundingClientRect().top + scrollY - 140, behavior: 'smooth' }); }));
   }
 
   /* ---------- lightbox ---------- */
@@ -226,7 +264,7 @@
     INDEX = [
       ...ALL_ARTICLES.map(a => ({ type: 'Article', cat: secBy(a.section).name, sec: a.section, title: a.title, text: a.summary + ' ' + a.body.join(' ') + ' ' + a.author, href: `#article-${a.issue.id}-${a.id}`, sum: a.summary, issue: a.issue })),
       ...(LATEST.diary || []).map(r => ({ type: 'Event', cat: 'What’s On', sec: 'whats-on', title: r.event, text: Object.values(r).join(' '), href: '#whats-on', sum: `${r.when} ${LATEST.month} · ${r.where} · ${r.time}` })),
-      ...(LATEST.adverts || []).map(a => ({ type: 'Advert', cat: 'Advertisers', sec: 'advertisers', title: `Advertisers – magazine page ${a.page}`, text: a.text, href: '#advertisers', sum: 'Local businesses advertising in this issue' })),
+      ...(LATEST.advertisers || []).map(a => ({ type: 'Advert', cat: 'Advertisers', sec: 'advertisers', title: a.name, text: [a.name, a.category, a.blurb, a.area, a.phone, a.ocr || ''].join(' '), href: '#advertiser-' + a.id, sum: `${a.category}${a.phone ? ' · ' + a.phone : ''} – ${a.blurb}` })),
       ...SITE.weekly.map(r => ({ type: 'Weekly', cat: 'Every week', sec: 'whats-on', title: r.event, text: Object.values(r).join(' '), href: '#whats-on', sum: `${r.day} · ${r.where} · ${r.time}` }))
     ];
   }
@@ -279,14 +317,14 @@
     current = pool.map(d => {
       const T = norm(d.title), X = norm(d.text), C = norm(d.cat); let score = 0;
       for (const t of terms) { if (!X.includes(t) && !T.includes(t) && !C.includes(t)) return null; score += (T.includes(t) ? 5 : 0) + (C.includes(t) ? 3 : 0) + Math.min(X.split(t).length - 1, 10); }
-      if (d.type === 'Article') score += 3; if (d.type === 'Page' || d.type === 'Advert') score -= 2;
+      if (d.type === 'Article') score += 3; if (d.type === 'Page') score -= 2;
       return { ...d, score };
     }).filter(Boolean).sort((a, b) => b.score - a.score).slice(0, 40);
     $('#sresults').innerHTML = current.length ? current.map((d, i) => resHTML(d, terms, i)).join('') : `<div class="sempty">No results for “${esc(raw)}”. Try another word, or browse <a href="#archive">back issues</a>.</div>`;
     sel = 0; mark();
   }
   function resHTML(d, terms, i) {
-    const body = (d.type === 'Article' || d.type === 'Page' || d.type === 'Advert') && terms.length ? snippet(d.text, terms) : d.sum;
+    const body = (d.type === 'Article' || d.type === 'Page') && terms.length ? snippet(d.text, terms) : d.sum;
     const label = d.type === 'Article' ? d.cat + (d.issue !== LATEST ? ` <span class="pg">${esc(d.issue.title)}</span>` : '') : d.type === 'Event' ? 'What’s On · This month' : d.type === 'Weekly' ? 'What’s On · Every week' : d.type === 'Advert' ? 'Advertisers' : 'In the magazine (opens PDF)';
     return `<a class="res" data-i="${i}" href="${d.href}"${d.external ? ' target="_blank" rel="noopener"' : ''}><span class="cat">${label}</span><b>${hl(d.title, terms)}</b><p>${hl(body, terms)}</p></a>`;
   }
