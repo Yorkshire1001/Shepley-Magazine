@@ -63,7 +63,7 @@
           ${iss.photoCredit ? `<span class="tag">${esc(iss.photoCredit)}</span>` : ''}</div>
         <div class="hero-side">
           <p class="lede">${esc(iss.lede || '')}</p>
-          <div class="hero-list"><div class="hero-list-label">In this issue</div><ul class="featured">${latest.slice(0, 6).map(a => `<li><a href="#article-${iss.id}-${a.id}">${esc(a.title.split(':')[0])} <em>p${a.page}</em></a></li>`).join('')}</ul></div>
+          <div class="hero-list"><div class="hero-list-label">In this issue</div><ol class="hl-list">${latest.slice(0, 5).map((a, n) => `<li><a href="#article-${iss.id}-${a.id}"><span class="hl-n">${String(n + 1).padStart(2, '0')}</span><span class="hl-t"><small>${esc(secBy(a.section).name)}</small>${esc(a.title.split(':')[0].split(' – ')[0])}</span><span class="hl-p">p${a.page}</span></a></li>`).join('')}</ol></div>
           <div class="actions"><a class="btn" href="${pdfPage(iss)}" target="_blank" rel="noopener">Read the issue</a><a class="btn ghost" href="#latest-issue">What's inside</a></div>
         </div></div></div>
       <section class="block"><div class="wrap">
